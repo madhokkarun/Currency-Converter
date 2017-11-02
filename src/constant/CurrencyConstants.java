@@ -9,7 +9,13 @@ public final class CurrencyConstants {
 	 */
 	public static final String INSERT_CURRENCY = "INSERT into CURRENCY values(?,?,?)";
 	public static final String INSERT_COUNTRY = "INSERT into COUNTRY values(?,?,?,?)";
+	public static final String SELECT_CURRENCY = "SELECT id, currency_name from CURRENCY";
+	public static final String INSERT_CONVERSION = "INSERT into CONVERSION_HISTORY values(?,?,?,?,?)";
+	public static final String SELECT_CONVERSION_HISTORY = "SELECT * from CONVERSION_HISTORY";
 	
+	public static final String TRUNCATE_CURRENCY = "DELETE from CURRENCY";
+	public static final String TRUNCATE_COUNTRY = "TRUNCATE TABLE COUNTRY";
+	public static final String TRUNCATE_CONVERSION_HISTORY = "TRUNCATE TABLE CONVERSION_HISTORY";
 	
 	/**
 	 * Currency constants

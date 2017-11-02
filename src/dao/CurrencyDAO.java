@@ -2,6 +2,7 @@ package dao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,8 +15,10 @@ import org.json.simple.JSONObject;
 
 import connection.SqlServerConnection;
 import constant.CurrencyConstants;
+import model.ConversionHistory;
 import model.Country;
 import model.Currency;
+import model.CurrencyExchange;
 
 public class CurrencyDAO {
 
@@ -118,5 +121,99 @@ public class CurrencyDAO {
 		conn.close();
 		
 		return countryList;
+	}
+	
+	
+	public static List<Currency> getAllCurrencies() throws SQLException
+	{
+		Connection conn = SqlServerConnection.getConnection();
+		
+		List<Currency> currencyList = new ArrayList();
+		
+		PreparedStatement ps = conn.prepareStatement(CurrencyConstants.SELECT_CURRENCY);
+		
+		ResultSet rs = ps.executeQuery();
+		
+		while(rs.next())
+		{
+			int index = 1;
+			Currency currency = new Currency();
+			
+			currency.setId(rs.getString(index++));
+			currency.setCurrencyName(rs.getString(index++));
+			
+			currencyList.add(currency);
+		}
+		
+		conn.close();
+		
+		return currencyList;
+	}
+	
+	public static void addConversionHistory(ConversionHistory conversionHistory) throws SQLException
+	{
+		Connection conn = SqlServerConnection.getConnection();
+		
+		PreparedStatement ps = conn.prepareStatement(CurrencyConstants.INSERT_CONVERSION);
+		
+		int index = 1;
+		
+		ps.setDouble(index++, conversionHistory.getFromValue());
+		ps.setString(index++, conversionHistory.getFromCurrency());
+		ps.setDouble(index++, conversionHistory.getToValue());
+		ps.setString(index++, conversionHistory.getToCurrency());
+		ps.setString(index++, conversionHistory.getConversionDate());
+		
+		ps.executeUpdate();
+		
+		conn.close();
+	}
+	
+	public static List<ConversionHistory> getConversionHistory() throws SQLException
+	{
+		Connection conn = SqlServerConnection.getConnection();
+		
+		List<ConversionHistory> conversionHistoryList = new ArrayList();
+		
+		PreparedStatement ps = conn.prepareStatement(CurrencyConstants.SELECT_CONVERSION_HISTORY);
+		
+		ResultSet rs = ps.executeQuery();
+		
+		while(rs.next())
+		{
+			ConversionHistory conversionHistory = new ConversionHistory();
+			
+			int index = 2;
+
+			conversionHistory.setFromValue(rs.getDouble(index++));
+			conversionHistory.setFromCurrency(rs.getString(index++));
+			conversionHistory.setToValue(rs.getDouble(index++));
+			conversionHistory.setToCurrency(rs.getString(index++));
+			conversionHistory.setConversionDate(rs.getString(index++));
+			
+			conversionHistoryList.add(conversionHistory);
+			
+		}
+		
+		conn.close();
+		
+		return conversionHistoryList;
+		
+	}
+	
+	public static void truncateTables() throws SQLException
+	{
+		Connection conn = SqlServerConnection.getConnection();
+		
+		PreparedStatement psTruncateHistory = conn.prepareStatement(CurrencyConstants.TRUNCATE_CONVERSION_HISTORY);
+		PreparedStatement psTruncateCountry = conn.prepareStatement(CurrencyConstants.TRUNCATE_COUNTRY);
+		PreparedStatement psTruncateCurrency = conn.prepareStatement(CurrencyConstants.TRUNCATE_CURRENCY);
+		
+		psTruncateHistory.executeUpdate();
+		psTruncateCountry.executeUpdate();
+		psTruncateCurrency.executeUpdate();
+		
+		conn.close();
+		
 	}
 }

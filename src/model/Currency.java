@@ -4,7 +4,7 @@ public class Currency {
 	
 	private String id;
 	private String currencyName;
-	private String currencySymbol;
+	private String currencySymbol = "";
 	
 	public String getId() {
 		return id;
