@@ -36,7 +36,7 @@ public class SqlServerConnection {
 		//System.out.println(JSONHandler.addCurrencies());
 		//System.out.println(JSONHandler.addCountries());
 		
-		//JOptionPane.showMessageDialog(null, JSONHandler.getConversionRate("AUD",99.0, "INR"));
+		JOptionPane.showMessageDialog(null, JSONHandler.getConversionRate("LKR",20.0, "INR"));
 		
 		/*List<CurrencyExchange> currencyExchangeList = JSONHandler.getAllCurrencyExchangePriceList("INR");
 		

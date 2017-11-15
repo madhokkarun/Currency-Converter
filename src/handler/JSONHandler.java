@@ -12,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
@@ -20,6 +21,11 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
+
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -32,6 +38,7 @@ import model.ConversionHistory;
 import model.Country;
 import model.Currency;
 import model.CurrencyExchange;
+import panel.CurrencyConverterPanel;
 
 public class JSONHandler {
 	
@@ -39,7 +46,7 @@ public class JSONHandler {
 	
 	public static List<Currency> currencyList = null;
 	public static List<Country> countryList = null;
-	public static Deque<ConversionHistory> conversionQueue = null;
+	public static Deque<ConversionHistory> conversionQueue = new ArrayDeque<>();
 
 	private static JSONObject getJSON(String url) throws ParseException, SQLException, IOException
 	{
@@ -154,16 +161,23 @@ public class JSONHandler {
 	public static void addHistoryToQueue() throws SQLException
 	{
 		int counter = 0;
+		List<ConversionHistory> conversionHistoryList = new ArrayList<>();
 		
-		for(ConversionHistory conversionHistory: CurrencyDAO.getConversionHistory())
+		conversionHistoryList = CurrencyDAO.getConversionHistory();
+		
+		if(!conversionHistoryList.isEmpty())
 		{
-			if(counter >= HISTORY_MAX_ITERATIONS)
-				break;
-			
-			conversionQueue.addLast(conversionHistory);
-			
-			counter++;
+			for(ConversionHistory conversionHistory: conversionHistoryList)
+			{
+				if(counter >= HISTORY_MAX_ITERATIONS)
+					break;
+				
+				conversionQueue.addLast(conversionHistory);
+				
+				counter++;
+			}
 		}
+		
 	}
 	
 	public static void writeConversionHistory(String Location) throws IOException, SQLException
@@ -175,10 +189,15 @@ public class JSONHandler {
 		
 		for(ConversionHistory conversionHistory: CurrencyDAO.getConversionHistory())
 		{
-			conversionHistoryWriter.write(String.format("%20s %26s %35s \r\n", conversionHistory.getConversionDate(), String.format("%,.2f", conversionHistory.getFromValue()) + " " + conversionHistory.getFromCurrency(), String.format("%,.2f", conversionHistory.getToValue()) + " " + conversionHistory.getToCurrency()));
+			conversionHistoryWriter.write(formatConversionHistory(conversionHistory));
 		}
 		
 		conversionHistoryWriter.close();
+	}
+	
+	public static String formatConversionHistory(ConversionHistory conversionHistory)
+	{
+		return String.format("%20s %26s %35s \r\n", conversionHistory.getConversionDate(), String.format("%,.2f", conversionHistory.getFromValue()) + " " + conversionHistory.getFromCurrency(), String.format("%,.2f", conversionHistory.getToValue()) + " " + conversionHistory.getToCurrency());
 	}
 	
 	public static List<CurrencyExchange> getAllCurrencyExchangePriceList(String toCurrency) throws SQLException, ParseException, IOException
@@ -217,8 +236,32 @@ public class JSONHandler {
 		
 		CurrencyDAO.addConversionHistory(conversionHistory);
 		
-		conversionQueue.removeLast();
+		if(!conversionQueue.isEmpty() && conversionQueue.size() > HISTORY_MAX_ITERATIONS)
+			conversionQueue.removeLast();
+		
 		conversionQueue.addFirst(conversionHistory);
+		
+	}
+	
+	public static void addRecentConversionsToPanel(JPanel recentConversionsPanel)
+	{
+		JLabel lblRecentConversions = new JLabel("                                                            Recent Conversions                                                                 ", SwingConstants.CENTER);
+		
+		recentConversionsPanel.add(lblRecentConversions);
+		
+		Iterator<ConversionHistory> dqIterator = JSONHandler.conversionQueue.iterator();
+		
+		while(dqIterator.hasNext())
+		{
+			JLabel lblConversion = new JLabel(JSONHandler.formatConversionHistory(dqIterator.next()));
+			recentConversionsPanel.add(lblConversion);
+		}
+	}
+	
+	public static void addNoRecentConversionsToPanel(JPanel recentConversionsPanel)
+	{
+		JLabel lblNoHistory = new JLabel("        No recent conversions        ");
+		recentConversionsPanel.add(lblNoHistory);
 	}
 	
 	public static void resetApplication() throws SQLException, ParseException, IOException
@@ -227,5 +270,6 @@ public class JSONHandler {
 		
 		currencyList = addCurrencies();
 		countryList = addCountries();
+		
 	}
 }
