@@ -25,6 +25,8 @@ public final class CurrencyConstants {
 	public static final String CURRENCY_NAME = "currencyName";
 	public static final String CURRENCY_VAL = "val";
 	
+	public static final String CURRENCY_INPUT_PATTERN = "([0-9]+([.][0-9]*)?|[.][0-9]+)$";
+	
 	/**
 	 * COUNTRY constants
 	 */

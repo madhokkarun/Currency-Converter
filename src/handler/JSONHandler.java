@@ -5,10 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -18,9 +15,7 @@ import java.util.Date;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
 import java.util.Scanner;
-import java.util.Set;
 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -31,14 +26,13 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import connection.SqlServerConnection;
 import constant.CurrencyConstants;
 import dao.CurrencyDAO;
 import model.ConversionHistory;
 import model.Country;
 import model.Currency;
 import model.CurrencyExchange;
-import panel.CurrencyConverterPanel;
+import utilities.CurrencyUtilities;
 
 public class JSONHandler {
 	
@@ -46,6 +40,7 @@ public class JSONHandler {
 	
 	public static List<Currency> currencyList = null;
 	public static List<Country> countryList = null;
+	
 	public static Deque<ConversionHistory> conversionQueue = new ArrayDeque<>();
 
 	private static JSONObject getJSON(String url) throws ParseException, SQLException, IOException
@@ -62,10 +57,7 @@ public class JSONHandler {
 			
 			if(responseCode != 200)
 			{
-				BufferedReader reader = new BufferedReader(new InputStreamReader(httpConn.getErrorStream()));
-	            String msg;
-	            while ((msg =reader.readLine()) != null)
-	                System.out.println(msg);
+	            	JOptionPane.showMessageDialog(null, "Connection problem");
 			}
 			else
 			{
@@ -109,7 +101,7 @@ public class JSONHandler {
 		
 		JSONObject currencyInfo = (JSONObject) json.get(key);
 		
-		return String.valueOf(fromValue * (Double)currencyInfo.get(CurrencyConstants.CURRENCY_VAL));
+		return String.valueOf(String.format("%,.2f", fromValue * Double.valueOf(String.valueOf(currencyInfo.get(CurrencyConstants.CURRENCY_VAL)))));
 	}
 	
 	
@@ -142,25 +134,35 @@ public class JSONHandler {
 		return countryList;
 	}
 	
-	public static void writeCurrencies(String Location) throws IOException, SQLException
+	public static boolean writeCurrencies(String Location) throws IOException, SQLException
 	{
-		FileWriter currencyWriter = new FileWriter(Location + "Currencies.txt");
+		FileWriter currencyWriter = new FileWriter(Location + "\\" + "Currencies.txt");
 		
+		List<Currency> currencyList = new ArrayList<>();
 		
-		currencyWriter.write(String.format("%20s %31s \r\n", "CURRENCY ABBREVIATION", "CURRENCY NAME"));
-		currencyWriter.write(System.getProperty("line.separator"));
-
-		for(Currency currency: CurrencyDAO.getAllCurrencies())
+		currencyList = CurrencyDAO.getAllCurrencies();
+		
+		if(currencyList.isEmpty())
+			currencyWriter.write("No currencies");
+		else
 		{
-			currencyWriter.write(String.format("%15s %-10s \r\n", currency.getId() + "\t\t\t\t", currency.getCurrencyName()));
+			currencyWriter.write(String.format("%20s %31s \r\n", "CURRENCY ABBREVIATION", "CURRENCY NAME"));
+			currencyWriter.write(System.getProperty("line.separator"));
+
+			for(Currency currency: currencyList)
+				currencyWriter.write(CurrencyUtilities.formatCurrency(currency));
 		}
 		
 		currencyWriter.close();
+		
+		return true;
 	}
 	
 	public static void addHistoryToQueue() throws SQLException
 	{
 		int counter = 0;
+		conversionQueue.clear();
+		
 		List<ConversionHistory> conversionHistoryList = new ArrayList<>();
 		
 		conversionHistoryList = CurrencyDAO.getConversionHistory();
@@ -180,31 +182,37 @@ public class JSONHandler {
 		
 	}
 	
-	public static void writeConversionHistory(String Location) throws IOException, SQLException
+	public static boolean writeConversionHistory(String Location) throws IOException, SQLException
 	{
-		FileWriter conversionHistoryWriter = new FileWriter(Location + "Conversion History.txt");
+		FileWriter conversionHistoryWriter = new FileWriter(Location + "\\" + "Conversion History.txt");
 		
-		conversionHistoryWriter.write(String.format("%17s %30s %34s \r\n", "DATE", "CONVERSION FROM", "CONVERSION TO"));
-		conversionHistoryWriter.write(System.getProperty("line.separator"));
+		List<ConversionHistory> conversionHistoryList = new ArrayList<>();
 		
-		for(ConversionHistory conversionHistory: CurrencyDAO.getConversionHistory())
+		conversionHistoryList = CurrencyDAO.getConversionHistory();
+		
+		if(conversionHistoryList.isEmpty())
+			conversionHistoryWriter.write("No conversion History");
+		else
 		{
-			conversionHistoryWriter.write(formatConversionHistory(conversionHistory));
+			conversionHistoryWriter.write(String.format("%17s %30s %34s \r\n", "DATE", "CONVERSION FROM", "CONVERSION TO"));
+			conversionHistoryWriter.write(System.getProperty("line.separator"));
+			
+			for(ConversionHistory conversionHistory: CurrencyDAO.getConversionHistory())
+				conversionHistoryWriter.write(CurrencyUtilities.formatConversionHistory(conversionHistory));
 		}
 		
+		
 		conversionHistoryWriter.close();
+		
+		return true;
 	}
 	
-	public static String formatConversionHistory(ConversionHistory conversionHistory)
-	{
-		return String.format("%20s %26s %35s \r\n", conversionHistory.getConversionDate(), String.format("%,.2f", conversionHistory.getFromValue()) + " " + conversionHistory.getFromCurrency(), String.format("%,.2f", conversionHistory.getToValue()) + " " + conversionHistory.getToCurrency());
-	}
 	
 	public static List<CurrencyExchange> getAllCurrencyExchangePriceList(String toCurrency) throws SQLException, ParseException, IOException
 	{
 		List<Currency> currencyList = CurrencyDAO.getAllCurrencies();
 		
-		List<CurrencyExchange> currencyExchangeList = new ArrayList();
+		List<CurrencyExchange> currencyExchangeList = new ArrayList<>();
 		
 		for(Currency currency: currencyList)
 		{
@@ -245,6 +253,10 @@ public class JSONHandler {
 	
 	public static void addRecentConversionsToPanel(JPanel recentConversionsPanel)
 	{
+		recentConversionsPanel.removeAll();
+		recentConversionsPanel.revalidate();
+		recentConversionsPanel.repaint();
+		
 		JLabel lblRecentConversions = new JLabel("                                                            Recent Conversions                                                                 ", SwingConstants.CENTER);
 		
 		recentConversionsPanel.add(lblRecentConversions);
@@ -253,16 +265,21 @@ public class JSONHandler {
 		
 		while(dqIterator.hasNext())
 		{
-			JLabel lblConversion = new JLabel(JSONHandler.formatConversionHistory(dqIterator.next()));
+			JLabel lblConversion = new JLabel(CurrencyUtilities.formatConversionHistory(dqIterator.next()));
 			recentConversionsPanel.add(lblConversion);
 		}
 	}
 	
 	public static void addNoRecentConversionsToPanel(JPanel recentConversionsPanel)
 	{
+		recentConversionsPanel.removeAll();
+		recentConversionsPanel.revalidate();
+		recentConversionsPanel.repaint();
+		
 		JLabel lblNoHistory = new JLabel("        No recent conversions        ");
 		recentConversionsPanel.add(lblNoHistory);
 	}
+	
 	
 	public static void resetApplication() throws SQLException, ParseException, IOException
 	{
