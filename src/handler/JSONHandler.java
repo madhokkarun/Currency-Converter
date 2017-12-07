@@ -101,7 +101,7 @@ public class JSONHandler {
 		
 		JSONObject currencyInfo = (JSONObject) json.get(key);
 		
-		return String.valueOf(String.format("%,.2f", fromValue * Double.valueOf(String.valueOf(currencyInfo.get(CurrencyConstants.CURRENCY_VAL)))));
+		return String.valueOf(fromValue * Double.valueOf(String.valueOf(currencyInfo.get(CurrencyConstants.CURRENCY_VAL))));
 	}
 	
 	

@@ -256,7 +256,7 @@ public class CurrencyConverterPanel {
 					JOptionPane.showMessageDialog(conversionInputPanel, "Please enter a valid amount");
 				else
 					try {
-						outputToValue.setText(JSONHandler.getConversionRate(CurrencyUtilities.getCurrencyFromComboBox(fromCurrencyOptions), Double.valueOf(currencyInputText), CurrencyUtilities.getCurrencyFromComboBox(toCurrencyOptions)));
+						outputToValue.setText(String.format("%,.2f", Double.valueOf(JSONHandler.getConversionRate(CurrencyUtilities.getCurrencyFromComboBox(fromCurrencyOptions), Double.valueOf(currencyInputText), CurrencyUtilities.getCurrencyFromComboBox(toCurrencyOptions)))));
 						
 						JSONHandler.addHistoryToQueue();
 						
